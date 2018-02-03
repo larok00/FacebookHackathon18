@@ -6,7 +6,7 @@ package eu.mhutti1.facebookhack;
 
 public class EndPoints {
 
-  public static final String ROOT = "http://mhutti1.eu";
-  public static final String PROCESS = "/test/upload.php";
+  public static final String ROOT = "http://54.89.88.102:3000";
+  public static final String PROCESS = "/processimage";
 }
 

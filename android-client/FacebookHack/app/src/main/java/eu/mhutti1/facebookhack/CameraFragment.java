@@ -1,11 +1,13 @@
 package eu.mhutti1.facebookhack;
 
 import static android.app.Activity.RESULT_OK;
+import static eu.mhutti1.facebookhack.MainActivity.PICK_IMAGE;
 import static eu.mhutti1.facebookhack.MainActivity.REQUEST_IMAGE_CAPTURE;
 
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Bitmap.CompressFormat;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -14,19 +16,27 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.FileProvider;
+import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.SurfaceView;
+import android.view.TextureView;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
+import eu.mhutti1.facebookhack.GalleryFragment.GalleryItem;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
@@ -39,9 +49,17 @@ public class CameraFragment extends Fragment implements OnClickListener {
 
   private Button button;
 
+  private Button importButton;
+
   private OnFragmentInteractionListener mListener;
 
   ImageView photoView;
+
+  ProgressBar progressBar;
+
+  public static HttpClient client = HttpClients.createDefault();
+
+
 
   String lastImage;
 
@@ -83,8 +101,21 @@ public class CameraFragment extends Fragment implements OnClickListener {
 
     photoView = layout.findViewById(R.id.photoView);
     button = layout.findViewById(R.id.button);
+    importButton = layout.findViewById(R.id.importButton);
+    progressBar = layout.findViewById(R.id.progressBar);
+
+    importButton.setOnClickListener(new OnClickListener() {
+      @Override
+      public void onClick(View view) {
+        Intent intent = new Intent();
+        intent.setType("image/*");
+        intent.setAction(Intent.ACTION_GET_CONTENT);
+        startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE);
+      }
+    });
     button.setOnClickListener(this);
 
+   // TextureView textureView = layout.findViewById(R.id.surfaceView);
     // Inflate the layout for this fragment
     return layout;
   }
@@ -162,13 +193,27 @@ public class CameraFragment extends Fragment implements OnClickListener {
   @Override
   public void onActivityResult(int requestCode, int resultCode, Intent data) {
     if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
-      Bundle extras = data.getExtras();
       Bitmap imageBitmap = BitmapFactory.decodeFile(lastImage);
       photoView.setImageBitmap(imageBitmap);
-
+      Log.d("test", "triggered");
       process();
-
-
+    }
+    if (requestCode == PICK_IMAGE && resultCode == RESULT_OK) {
+      Bitmap imageBitmap = null;
+      try {
+        imageBitmap = BitmapFactory.decodeStream(getContext().getContentResolver().openInputStream(data.getData()));
+        lastImage = createImageFile().getPath();
+        FileOutputStream fOut = new FileOutputStream(new File(lastImage));
+        imageBitmap.compress(CompressFormat.JPEG, 25, fOut);
+        fOut.flush();
+        fOut.close();
+        photoView.setImageBitmap(imageBitmap);
+        process();
+      } catch (FileNotFoundException e) {
+        e.printStackTrace();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
     }
   }
 
@@ -193,9 +238,12 @@ public class CameraFragment extends Fragment implements OnClickListener {
 
     HttpResponse httpResponse;
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
+    Bitmap result;
 
     protected void onPreExecute() {
+      progressBar.setVisibility(View.VISIBLE);
+      button.setEnabled(false);
+      importButton.setEnabled(false);
     }
 
     protected String doInBackground(String... urls) {
@@ -203,16 +251,31 @@ public class CameraFragment extends Fragment implements OnClickListener {
 
       builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
 
-      FileBody fileBody = new FileBody(new File(lastImage)); //image should be a String
+      File compressedFile = new File(lastImage + ".comp");
+      try {
+        FileOutputStream fOut = new FileOutputStream(compressedFile);
+        BitmapFactory.decodeFile(lastImage).compress(CompressFormat.JPEG, 25, fOut);
+        fOut.flush();
+        fOut.close();
+      } catch (FileNotFoundException e) {
+        e.printStackTrace();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+
+      FileBody fileBody = new FileBody(compressedFile); //image should be a String
       builder.addPart("my_file", fileBody);
 
       HttpEntity entity = builder.build();
       HttpPost httpPost = new HttpPost(EndPoints.ROOT + EndPoints.PROCESS);
       httpPost.setEntity(entity);
-      CloseableHttpClient client = HttpClients.createDefault();
       try {
         httpResponse = client.execute(httpPost);
         httpResponse.getEntity().writeTo(baos);
+        result = BitmapFactory.decodeByteArray(baos.toByteArray(), 0,
+            (int) httpResponse.getEntity().getContentLength());
+        new File(lastImage).delete();
+        new File(lastImage + ".comp").delete();
       } catch (IOException e) {
         e.printStackTrace();
       }
@@ -221,10 +284,23 @@ public class CameraFragment extends Fragment implements OnClickListener {
     }
 
     protected void onPostExecute(String feed) {
-      Bitmap result = BitmapFactory.decodeByteArray(baos.toByteArray(), 0,
-          (int) httpResponse.getEntity().getContentLength());
       photoView.setImageBitmap(result);
+      try {
+        File output = createImageFile();
+        FileOutputStream fOut = new FileOutputStream(output);
 
+        result.compress(Bitmap.CompressFormat.PNG, 85, fOut);
+        fOut.flush();
+        fOut.close();
+        GalleryFragment galleryFragment = ((MainActivity) getActivity()).galleryFragment;
+        galleryFragment.galleryItems.add(new GalleryItem(output.getPath(), result));
+        galleryFragment.adapter.notifyDataSetChanged();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+      progressBar.setVisibility(View.INVISIBLE);
+      button.setEnabled(true);
+      importButton.setEnabled(true);
     }
   }
 }

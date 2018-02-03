@@ -11,6 +11,7 @@ import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import java.io.File;
@@ -37,7 +38,9 @@ public class GalleryFragment extends Fragment {
   // TODO: Rename and change types of parameters
   private String mParam1;
   private String mParam2;
+  ArrayList<GalleryItem> galleryItems;
 
+  GalleryAdapter adapter;
   private OnFragmentInteractionListener mListener;
 
   public GalleryFragment() {
@@ -77,8 +80,8 @@ public class GalleryFragment extends Fragment {
 
     RecyclerView.LayoutManager layoutManager = new GridLayoutManager(getContext(),2);
     recyclerView.setLayoutManager(layoutManager);
-    ArrayList<GalleryItem> createLists = getFiles();
-    GalleryAdapter adapter = new GalleryAdapter(getContext(), createLists);
+    galleryItems = getFiles();
+    adapter = new GalleryAdapter(getContext(), galleryItems);
     recyclerView.setAdapter(adapter);
 
     return layout;
@@ -111,9 +114,12 @@ public class GalleryFragment extends Fragment {
   public ArrayList<GalleryItem> getFiles() {
     File[] files = getContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES).listFiles();
     ArrayList<GalleryItem> result = new ArrayList<>();
-    for (File file : files) {
-      Bitmap b = BitmapFactory.decodeFile(file.getPath());
-      result.add(new GalleryItem(file.getPath(), Bitmap.createScaledBitmap(b, b.getWidth() /10, b.getHeight() /10, false)));
+    for (int i = files.length - 1; i > 0; i--) {
+      Bitmap b = BitmapFactory.decodeFile(files[i].getPath());
+      if (b != null) {
+        result.add(new GalleryItem(files[i].getPath(),
+            Bitmap.createScaledBitmap(b, b.getWidth() / 10, b.getHeight() / 10, false)));
+      }
     }
     return result;
   }
@@ -134,7 +140,7 @@ public class GalleryFragment extends Fragment {
     void onFragmentInteraction(Uri uri);
   }
 
-  public class GalleryItem {
+  public static class GalleryItem {
 
     private String path;
     private Bitmap image;
@@ -164,9 +170,18 @@ public class GalleryFragment extends Fragment {
     }
 
     @Override
-    public void onBindViewHolder(GalleryAdapter.ViewHolder holder, int position) {
+    public void onBindViewHolder(GalleryAdapter.ViewHolder holder, final int position) {
       holder.img.setScaleType(ImageView.ScaleType.CENTER_CROP);
       holder.img.setImageBitmap(galleryList.get(position).image);
+      holder.img.setOnLongClickListener(new OnLongClickListener() {
+        @Override
+        public boolean onLongClick(View view) {
+          new File(galleryList.get(position).path).delete();
+          galleryList.remove(position);
+          notifyDataSetChanged();
+          return false;
+        }
+      });
     }
 
     @Override
