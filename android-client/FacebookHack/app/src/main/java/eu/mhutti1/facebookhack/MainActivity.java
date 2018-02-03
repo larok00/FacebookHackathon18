@@ -51,6 +51,8 @@ public class MainActivity extends AppCompatActivity implements CameraFragment.On
     GalleryFragment.OnFragmentInteractionListener {
 
   static final int REQUEST_IMAGE_CAPTURE = 1;
+  static final int PICK_IMAGE = 2;
+
 
   CameraFragment cameraFragment;
 
