@@ -51,11 +51,11 @@
     tools:layout_editor_absoluteX="167dp"
     tools:layout_editor_absoluteY="419dp"/>
 
-  <!--<TextureView-->
-    <!--android:id="@+id/surfaceView"-->
-    <!--android:layout_width="156dp"-->
-    <!--android:layout_height="wrap_content"-->
-    <!--tools:layout_editor_absoluteX="8dp"-->
-    <!--tools:layout_editor_absoluteY="472dp"/>-->
+  <TextureView
+    android:id="@+id/texturView"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    tools:layout_editor_absoluteX="8dp"
+    tools:layout_editor_absoluteY="472dp"/>
 
 </android.support.constraint.ConstraintLayout>
