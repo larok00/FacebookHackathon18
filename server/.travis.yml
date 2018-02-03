@@ -1,0 +1,21 @@
+# This file is part of server.
+# https://github.com/someuser/somepackage
+
+# Licensed under the MIT license:
+# http://www.opensource.org/licenses/MIT-license
+# Copyright (c) 2018, Jacek Burys <jacekburys@gmail.com>
+
+language: python
+
+python:
+    - "3.2"
+    - "3.3"
+    - "3.4"
+
+install:
+    # install python requirements
+    - make setup
+
+script:
+    # run tests
+    - make test
