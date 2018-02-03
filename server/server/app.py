@@ -13,11 +13,13 @@ import os.path
 import logging
 import sys
 import argparse
+import httplib, urllib, base64, json
 from urlparse import urlparse, urlunparse
 
-from flask import Flask, request, redirect, current_app
+from flask import Flask, request, redirect, current_app, url_for, render_template
 from flask_debugtoolbar import DebugToolbarExtension
 
+from werkzeug.utils import secure_filename
 from server import config as config_module
 from server.static import assets
 from server import (
@@ -41,6 +43,18 @@ blueprints = (
 )
 
 
+app = Flask(__name__)
+    
+
+headers = {
+    # Request headers. Replace the placeholder key below with your subscription key.
+    'Content-Type': 'application/json',
+    'Ocp-Apim-Subscription-Key': '538d2cca588e4da7958e780eb3ee4391',
+}
+
+params = urllib.urlencode({
+})
+
 def run_bower_list():
     bower_list = 'bower_list.js'
     try:
@@ -55,7 +69,6 @@ def create_app(config, debug=False):
     if config is None:
         config = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config', 'local.conf'))
 
-    app = Flask(__name__)
     app.debug = debug
     config_module.init_app(app, config)
 
@@ -85,6 +98,60 @@ def create_app(config, debug=False):
 
     return app
 
+
+APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_FOLDER = '/home/dragos/envs/lsbaws/FacebookHackathon2018/server/server'
+ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/upload', methods=['GET', 'POST'])
+def upload_file():
+    if request.method == 'POST':
+        # check if the post request has the file part
+        if 'file' not in request.files:
+            flash('No file part')
+            return redirect(request.url)
+        file = request.files['file']
+        # if user does not select file, browser also
+        # submit a empty part without filename
+        if file.filename == '':
+            flash('No selected file')
+            return redirect(request.url)
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+	    target = os.path.join(APP_ROOT, 'images')
+            print(target)
+            if not os.path.isdir(target):
+              os.mkdir(target)
+            destination = "/".join([target, filename])
+            file.save(destination)
+            print(destination)
+            body = "{ 'url': '" + destination + "'}"
+            print(body)
+            try:
+	      # NOTE: You must use the same region in your REST call as you used to obtain your subscription keys.
+   	      #   For example, if you obtained your subscription keys from westcentralus, replace "westus" in the 
+	      #   URL below with "westcentralus".
+	      conn = httplib.HTTPSConnection('westus.api.cognitive.microsoft.com')
+	      conn.request("POST", "/emotion/v1.0/recognize?%s" % params, body, headers)
+	      response = conn.getresponse()
+	      data = response.read()
+   	      # 'data' contains the JSON data. The following formats the JSON data for display.
+	      parsed = json.loads(data)
+     	      print ("Response:")
+	      print (json.dumps(parsed, sort_keys=True, indent=2))
+  	      conn.close()
+	    except Exception as e:
+   	      print("[Errno {0}] {1}".format(e.errno, e.strerror))
+            print(destination)
+	    return render_template("picture.html", user_image = destination)	            
+#return redirect(url_for('upload_file', filename=filename))
+    return '''<!doctype html><title>Upload new File</title><h1>Upload new File</h1><form method=post enctype=multipart/form-data><p><input type=file name=file><input type=submit value=Upload></form>'''
 
 def main():
     args = parse_arguments()
