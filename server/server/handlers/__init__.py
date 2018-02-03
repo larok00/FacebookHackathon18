@@ -12,6 +12,7 @@
 from server.handlers import (
     healthcheck,
     index,
+    process_image
     # add your own handlers here
 )
 
@@ -19,3 +20,4 @@ from server.handlers import (
 def init_app(app):
     app.register_blueprint(healthcheck.mod)
     app.register_blueprint(index.mod)
+    app.register_blueprint(process_image.mod)
