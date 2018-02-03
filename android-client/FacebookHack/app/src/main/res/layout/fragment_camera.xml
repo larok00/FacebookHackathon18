@@ -42,6 +42,20 @@
     app:layout_constraintRight_toRightOf="parent"
     tools:layout_conversion_absoluteHeight="48dp"
     tools:layout_conversion_absoluteWidth="109dp"/>
+
+
+  <Button
+    android:id="@+id/switchButton"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="444dp"
+    android:text="Switch"
+    app:layout_constraintBottom_toBottomOf="parent"
+    app:layout_constraintHorizontal_bias="0.941"
+    app:layout_constraintLeft_toLeftOf="parent"
+    app:layout_constraintRight_toRightOf="parent"
+    tools:layout_conversion_absoluteHeight="48dp"
+    tools:layout_conversion_absoluteWidth="109dp"/>
   <ProgressBar
     android:id="@+id/progressBar"
     style="?android:attr/progressBarStyle"

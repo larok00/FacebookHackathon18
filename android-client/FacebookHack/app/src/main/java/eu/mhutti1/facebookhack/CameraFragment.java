@@ -13,6 +13,7 @@ import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
 import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
+import android.graphics.Matrix;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -79,6 +80,8 @@ public class CameraFragment extends Fragment implements OnClickListener {
 
   private Button importButton;
 
+  private Button switchButton;
+
   private OnFragmentInteractionListener mListener;
 
   CameraDevice cameraDevice;
@@ -104,6 +107,8 @@ public class CameraFragment extends Fragment implements OnClickListener {
   Handler handler;
 
   private String cameraId;
+
+  int cameraNumber = 0;
 
   CameraCaptureSession cameraCaptureSessions;
 
@@ -161,6 +166,16 @@ public class CameraFragment extends Fragment implements OnClickListener {
     progressBar = layout.findViewById(R.id.progressBar);
     textureView = layout.findViewById(R.id.texturView);
     textureView.setSurfaceTextureListener(textureListener);
+
+    switchButton = layout.findViewById(R.id.switchButton);
+    switchButton.setOnClickListener(new OnClickListener() {
+      @Override
+      public void onClick(View view) {
+        closeCamera();
+        cameraNumber++;
+        startCamera();
+      }
+    });
 
     importButton.setOnClickListener(new OnClickListener() {
       @Override
@@ -324,7 +339,14 @@ public class CameraFragment extends Fragment implements OnClickListener {
           OutputStream output = null;
           try {
             output = new FileOutputStream(file);
-            output.write(bytes);
+            if (cameraNumber % 2 == 1) {
+              Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+              Matrix matrix = new Matrix();
+              matrix.postScale(1, -1, bitmap.getWidth() / 2, bitmap.getHeight() / 2);
+              Bitmap.createBitmap(bitmap,0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true).compress(CompressFormat.JPEG, 100, output);
+            } else {
+              output.write(bytes);
+            }
           } finally {
             if (null != output) {
               output.close();
@@ -365,7 +387,7 @@ public class CameraFragment extends Fragment implements OnClickListener {
   private void startCamera() {
     CameraManager manager = (CameraManager) getActivity().getSystemService(Context.CAMERA_SERVICE);
     try {
-      cameraId = manager.getCameraIdList()[1];
+      cameraId = manager.getCameraIdList()[cameraNumber % manager.getCameraIdList().length];
       CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
       StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
       assert map != null;
