@@ -1,12 +1,22 @@
 package eu.mhutti1.facebookhack;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 
 /**
@@ -45,27 +55,33 @@ public class GalleryFragment extends Fragment {
   // TODO: Rename and change types and number of parameters
   public static GalleryFragment newInstance(String param1, String param2) {
     GalleryFragment fragment = new GalleryFragment();
-    Bundle args = new Bundle();
-    args.putString(ARG_PARAM1, param1);
-    args.putString(ARG_PARAM2, param2);
-    fragment.setArguments(args);
     return fragment;
   }
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    if (getArguments() != null) {
-      mParam1 = getArguments().getString(ARG_PARAM1);
-      mParam2 = getArguments().getString(ARG_PARAM2);
-    }
+
+
   }
 
   @Override
   public View onCreateView(LayoutInflater inflater, ViewGroup container,
       Bundle savedInstanceState) {
     // Inflate the layout for this fragment
-    return inflater.inflate(R.layout.fragment_gallery, container, false);
+
+    View layout = inflater.inflate(R.layout.fragment_gallery, container, false);
+
+    RecyclerView recyclerView = layout.findViewById(R.id.imagegallery);
+    recyclerView.setHasFixedSize(true);
+
+    RecyclerView.LayoutManager layoutManager = new GridLayoutManager(getContext(),2);
+    recyclerView.setLayoutManager(layoutManager);
+    ArrayList<GalleryItem> createLists = getFiles();
+    GalleryAdapter adapter = new GalleryAdapter(getContext(), createLists);
+    recyclerView.setAdapter(adapter);
+
+    return layout;
   }
 
   // TODO: Rename method, update argument and hook method into UI event
@@ -92,6 +108,16 @@ public class GalleryFragment extends Fragment {
     mListener = null;
   }
 
+  public ArrayList<GalleryItem> getFiles() {
+    File[] files = getContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES).listFiles();
+    ArrayList<GalleryItem> result = new ArrayList<>();
+    for (File file : files) {
+      Bitmap b = BitmapFactory.decodeFile(file.getPath());
+      result.add(new GalleryItem(file.getPath(), Bitmap.createScaledBitmap(b, b.getWidth() /10, b.getHeight() /10, false)));
+    }
+    return result;
+  }
+
   /**
    * This interface must be implemented by activities that contain this
    * fragment to allow an interaction in this fragment to be communicated
@@ -106,5 +132,54 @@ public class GalleryFragment extends Fragment {
 
     // TODO: Update argument type and name
     void onFragmentInteraction(Uri uri);
+  }
+
+  public class GalleryItem {
+
+    private String path;
+    private Bitmap image;
+
+    public GalleryItem(String path, Bitmap image) {
+      this.path = path;
+      this.image = image;
+    }
+
+  }
+
+
+  public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHolder> {
+
+    private ArrayList<GalleryItem> galleryList;
+    private Context context;
+
+    public GalleryAdapter(Context context, ArrayList<GalleryItem> galleryList) {
+      this.context = context;
+      this.galleryList = galleryList;
+    }
+
+    @Override
+    public GalleryAdapter.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+      View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.gallery_item, parent, false);
+      return new ViewHolder(view);
+    }
+
+    @Override
+    public void onBindViewHolder(GalleryAdapter.ViewHolder holder, int position) {
+      holder.img.setScaleType(ImageView.ScaleType.CENTER_CROP);
+      holder.img.setImageBitmap(galleryList.get(position).image);
+    }
+
+    @Override
+    public int getItemCount() {
+      return galleryList.size();
+    }
+
+    public class ViewHolder extends RecyclerView.ViewHolder{
+      private ImageView img;
+      public ViewHolder(View view) {
+        super(view);
+        img = (ImageView) view.findViewById(R.id.img);
+      }
+    }
   }
 }
