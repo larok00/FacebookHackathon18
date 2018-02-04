@@ -81,7 +81,7 @@ public class CameraFragment extends Fragment implements OnClickListener {
 
   private Button sadButton;
 
-  private Button neutralButton;
+  //private Button neutralButton;
 
   private Button saveButton;
 
@@ -156,7 +156,7 @@ public class CameraFragment extends Fragment implements OnClickListener {
     switchButton.setVisibility(View.INVISIBLE);
     happyButton.setVisibility(View.VISIBLE);
     sadButton.setVisibility(View.VISIBLE);
-    neutralButton.setVisibility(View.VISIBLE);
+    //neutralButton.setVisibility(View.VISIBLE);
   }
 
   public void process(String emotion) {
@@ -224,7 +224,8 @@ public class CameraFragment extends Fragment implements OnClickListener {
         switchButton.setVisibility(View.VISIBLE);
       }
     });
-    neutralButton = layout.findViewById(R.id.neutralButton);
+    //neutralButton = layout.findViewById(R.id.neutralButton);
+    /*
     neutralButton.setOnClickListener(new OnClickListener() {
       @Override
       public void onClick(View view) {
@@ -234,6 +235,7 @@ public class CameraFragment extends Fragment implements OnClickListener {
         saveDiscard();
       }
     });
+    */
     happyButton.setOnClickListener(new OnClickListener() {
       @Override
       public void onClick(View view) {
@@ -611,7 +613,7 @@ public class CameraFragment extends Fragment implements OnClickListener {
     protected void onPreExecute() {
       happyButton.setVisibility(View.INVISIBLE);
       sadButton.setVisibility(View.INVISIBLE);
-      neutralButton.setVisibility(View.INVISIBLE);
+      //neutralButton.setVisibility(View.INVISIBLE);
     }
 
     protected String doInBackground(String... urls) {
