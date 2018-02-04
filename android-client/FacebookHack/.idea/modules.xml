@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/FacebookHack.iml" filepath="$PROJECT_DIR$/FacebookHack.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://C:\Users\Jacek\Desktop\FacebookHackathon2018\android-client\FacebookHack\app\app.iml" filepath="C:\Users\Jacek\Desktop\FacebookHackathon2018\android-client\FacebookHack\app\app.iml" />
     </modules>
   </component>
 </project>

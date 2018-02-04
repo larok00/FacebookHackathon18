@@ -267,7 +267,7 @@ public class CameraFragment extends Fragment implements OnClickListener {
       cameraDevice.createCaptureSession(Arrays.asList(surface), new CameraCaptureSession.StateCallback(){
         @Override
         public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
-          //The camera is already closed
+          //The camera_btn is already closed
           if (null == cameraDevice) {
             return;
           }
@@ -392,7 +392,7 @@ public class CameraFragment extends Fragment implements OnClickListener {
       StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
       assert map != null;
       imageDimension = map.getOutputSizes(SurfaceTexture.class)[0];
-      // Add permission for camera and let user grant the permission
+      // Add permission for camera_btn and let user grant the permission
       if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
         ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 10);
         return;
