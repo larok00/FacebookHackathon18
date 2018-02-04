@@ -12,9 +12,8 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
 import android.graphics.BitmapFactory;
-import android.graphics.ImageFormat;
-import android.graphics.Matrix;
 import android.graphics.SurfaceTexture;
+import android.graphics.drawable.BitmapDrawable;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -24,7 +23,6 @@ import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
-import android.media.Image;
 import android.media.ImageReader;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -43,10 +41,10 @@ import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.LayoutInflater;
 import android.view.Surface;
-import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -58,12 +56,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -71,7 +66,6 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.content.FileBody;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 
 
@@ -82,6 +76,16 @@ public class CameraFragment extends Fragment implements OnClickListener {
   private Button importButton;
 
   private Button switchButton;
+
+  private Button happyButton;
+
+  private Button sadButton;
+
+  private Button neutralButton;
+
+  private Button saveButton;
+
+  private Button discardButton;
 
   private OnFragmentInteractionListener mListener;
 
@@ -144,9 +148,21 @@ public class CameraFragment extends Fragment implements OnClickListener {
     return fragment;
   }
 
-  public void process() {
+  public void choose() {
+    textureView.setVisibility(View.INVISIBLE);
+    progressBar.setVisibility(View.VISIBLE);
+    button.setVisibility(View.INVISIBLE);
+    importButton.setVisibility(View.INVISIBLE);
+    switchButton.setVisibility(View.INVISIBLE);
+    happyButton.setVisibility(View.VISIBLE);
+    sadButton.setVisibility(View.VISIBLE);
+    neutralButton.setVisibility(View.VISIBLE);
+  }
+
+  public void process(String emotion) {
+
     ProcessPicture processPicture = new ProcessPicture();
-    processPicture.execute(lastImage);
+    processPicture.execute(lastImage, emotion);
   }
 
   @Override
@@ -162,11 +178,89 @@ public class CameraFragment extends Fragment implements OnClickListener {
     View layout = inflater.inflate(R.layout.fragment_camera, container, false);
 
     photoView = layout.findViewById(R.id.photoView);
-    button = layout.findViewById(R.id.button);
+    button = layout.findViewById(R.id.captureButton);
     importButton = layout.findViewById(R.id.importButton);
     progressBar = layout.findViewById(R.id.progressBar);
     textureView = layout.findViewById(R.id.texturView);
     textureView.setSurfaceTextureListener(textureListener);
+    happyButton = layout.findViewById(R.id.happyButton);
+    sadButton = layout.findViewById(R.id.sadButton);
+    saveButton = layout.findViewById(R.id.saveButton);
+    discardButton = layout.findViewById(R.id.discardButton);
+    discardButton.setOnClickListener(new OnClickListener() {
+      @Override
+      public void onClick(View view) {
+        textureView.setVisibility(View.VISIBLE);
+        button.setVisibility(View.VISIBLE);
+        importButton.setVisibility(View.VISIBLE);
+        switchButton.setVisibility(View.VISIBLE);
+        saveButton.setVisibility(View.INVISIBLE);
+        discardButton.setVisibility(View.INVISIBLE);
+      }
+    });
+    saveButton.setOnClickListener(new OnClickListener() {
+      @Override
+      public void onClick(View view) {
+        saveButton.setVisibility(View.INVISIBLE);
+        discardButton.setVisibility(View.INVISIBLE);
+        try {
+          File output = createImageFile();
+          FileOutputStream fOut = new FileOutputStream(output);
+          BitmapDrawable drawable = (BitmapDrawable) photoView.getDrawable();
+          Bitmap bitmap = drawable.getBitmap();
+          bitmap.compress(Bitmap.CompressFormat.PNG, 100, fOut);
+          fOut.flush();
+          fOut.close();
+          GalleryFragment galleryFragment = ((MainActivity) getActivity()).galleryFragment;
+          galleryFragment.galleryItems.add(new GalleryItem(output.getPath(), bitmap));
+          galleryFragment.adapter.notifyDataSetChanged();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+
+        textureView.setVisibility(View.VISIBLE);
+        button.setVisibility(View.VISIBLE);
+        importButton.setVisibility(View.VISIBLE);
+        switchButton.setVisibility(View.VISIBLE);
+      }
+    });
+    neutralButton = layout.findViewById(R.id.neutralButton);
+    neutralButton.setOnClickListener(new OnClickListener() {
+      @Override
+      public void onClick(View view) {
+        happyButton.setVisibility(View.INVISIBLE);
+        sadButton.setVisibility(View.INVISIBLE);
+        neutralButton.setVisibility(View.INVISIBLE);
+        saveDiscard();
+      }
+    });
+    happyButton.setOnClickListener(new OnClickListener() {
+      @Override
+      public void onClick(View view) {
+        process("happy");
+      }
+    });
+    happyButton.setOnLongClickListener(new OnLongClickListener() {
+      @Override
+      public boolean onLongClick(View view) {
+        process("vhappy");
+        return true;
+      }
+    });
+    sadButton.setOnClickListener(new OnClickListener() {
+      @Override
+      public void onClick(View view) {
+        process("sad");
+      }
+    });
+    sadButton.setOnLongClickListener(new OnLongClickListener() {
+      @Override
+      public boolean onLongClick(View view) {
+        process("vsad");
+        return true;
+      }
+    });
+
 
     switchButton = layout.findViewById(R.id.switchButton);
     switchButton.setOnClickListener(new OnClickListener() {
@@ -338,7 +432,7 @@ public class CameraFragment extends Fragment implements OnClickListener {
         public void run() {
           photoView.setImageBitmap(BitmapFactory.decodeFile(file.getPath()));
           lastImage = file.getPath();
-          process();
+          choose();
         }
       });
     }
@@ -470,7 +564,7 @@ public class CameraFragment extends Fragment implements OnClickListener {
       Bitmap imageBitmap = BitmapFactory.decodeFile(lastImage);
       photoView.setImageBitmap(imageBitmap);
       Log.d("test", "triggered");
-      process();
+      choose();
     }
     if (requestCode == PICK_IMAGE && resultCode == RESULT_OK) {
       Bitmap imageBitmap = null;
@@ -482,7 +576,7 @@ public class CameraFragment extends Fragment implements OnClickListener {
         fOut.flush();
         fOut.close();
         photoView.setImageBitmap(imageBitmap);
-        process();
+        choose();
       } catch (FileNotFoundException e) {
         e.printStackTrace();
       } catch (IOException e) {
@@ -515,10 +609,9 @@ public class CameraFragment extends Fragment implements OnClickListener {
     Bitmap result;
 
     protected void onPreExecute() {
-      textureView.setVisibility(View.INVISIBLE);
-      progressBar.setVisibility(View.VISIBLE);
-      button.setEnabled(false);
-      importButton.setEnabled(false);
+      happyButton.setVisibility(View.INVISIBLE);
+      sadButton.setVisibility(View.INVISIBLE);
+      neutralButton.setVisibility(View.INVISIBLE);
     }
 
     protected String doInBackground(String... urls) {
@@ -526,23 +619,13 @@ public class CameraFragment extends Fragment implements OnClickListener {
 
       builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
 
-      File compressedFile = new File(lastImage + ".comp");
-      try {
-        FileOutputStream fOut = new FileOutputStream(compressedFile);
-        BitmapFactory.decodeFile(lastImage).compress(CompressFormat.JPEG, 25, fOut);
-        fOut.flush();
-        fOut.close();
-      } catch (FileNotFoundException e) {
-        e.printStackTrace();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
 
-      FileBody fileBody = new FileBody(compressedFile); //image should be a String
+      FileBody fileBody = new FileBody(new File(lastImage)); //image should be a String
       builder.addPart("my_file", fileBody);
 
       HttpEntity entity = builder.build();
       HttpPost httpPost = new HttpPost(EndPoints.ROOT + EndPoints.PROCESS);
+      httpPost.setHeader("emotion", urls[1]);
       httpPost.setEntity(entity);
       try {
         httpResponse = client.execute(httpPost);
@@ -560,31 +643,13 @@ public class CameraFragment extends Fragment implements OnClickListener {
 
     protected void onPostExecute(String feed) {
       photoView.setImageBitmap(result);
-      try {
-        File output = createImageFile();
-        FileOutputStream fOut = new FileOutputStream(output);
-
-        result.compress(Bitmap.CompressFormat.PNG, 85, fOut);
-        fOut.flush();
-        fOut.close();
-        GalleryFragment galleryFragment = ((MainActivity) getActivity()).galleryFragment;
-        galleryFragment.galleryItems.add(new GalleryItem(output.getPath(), result));
-        galleryFragment.adapter.notifyDataSetChanged();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-
-      progressBar.setVisibility(View.INVISIBLE);
-
-      final Handler handler = new Handler();
-      handler.postDelayed(new Runnable() {
-        @Override
-        public void run() {
-          textureView.setVisibility(View.VISIBLE);
-          button.setEnabled(true);
-          importButton.setEnabled(true);        }
-      }, 3000);
+      saveDiscard();
 
     }
   }
+  public void saveDiscard() {
+    saveButton.setVisibility(View.VISIBLE);
+    discardButton.setVisibility(View.VISIBLE);
+  }
+
 }
