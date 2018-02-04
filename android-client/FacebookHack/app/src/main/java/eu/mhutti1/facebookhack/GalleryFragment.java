@@ -117,8 +117,8 @@ public class GalleryFragment extends Fragment {
     for (int i = files.length - 1; i > 0; i--) {
       Bitmap b = BitmapFactory.decodeFile(files[i].getPath());
       if (b != null) {
-        result.add(new GalleryItem(files[i].getPath(),
-            Bitmap.createScaledBitmap(b, b.getWidth() / 10, b.getHeight() / 10, false)));
+        result.add(new GalleryItem(files[i].getPath(), b));
+            //Bitmap.createScaledBitmap(b, b.getWidth() / 10, b.getHeight() / 10, false)));
       }
     }
     return result;

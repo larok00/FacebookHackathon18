@@ -150,7 +150,6 @@ public class CameraFragment extends Fragment implements OnClickListener {
 
   public void choose() {
     textureView.setVisibility(View.INVISIBLE);
-    progressBar.setVisibility(View.VISIBLE);
     button.setVisibility(View.INVISIBLE);
     importButton.setVisibility(View.INVISIBLE);
     switchButton.setVisibility(View.INVISIBLE);
@@ -208,7 +207,7 @@ public class CameraFragment extends Fragment implements OnClickListener {
           FileOutputStream fOut = new FileOutputStream(output);
           BitmapDrawable drawable = (BitmapDrawable) photoView.getDrawable();
           Bitmap bitmap = drawable.getBitmap();
-          bitmap.compress(Bitmap.CompressFormat.PNG, 100, fOut);
+          bitmap.compress(CompressFormat.JPEG, 100, fOut);
           fOut.flush();
           fOut.close();
           GalleryFragment galleryFragment = ((MainActivity) getActivity()).galleryFragment;
@@ -613,6 +612,7 @@ public class CameraFragment extends Fragment implements OnClickListener {
     protected void onPreExecute() {
       happyButton.setVisibility(View.INVISIBLE);
       sadButton.setVisibility(View.INVISIBLE);
+      progressBar.setVisibility(View.VISIBLE);
       //neutralButton.setVisibility(View.INVISIBLE);
     }
 
@@ -652,6 +652,7 @@ public class CameraFragment extends Fragment implements OnClickListener {
   public void saveDiscard() {
     saveButton.setVisibility(View.VISIBLE);
     discardButton.setVisibility(View.VISIBLE);
+    progressBar.setVisibility(View.INVISIBLE);
   }
 
 }
