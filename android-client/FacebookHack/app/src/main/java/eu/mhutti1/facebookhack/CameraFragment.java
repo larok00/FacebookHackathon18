@@ -181,31 +181,31 @@ public class CameraFragment extends Fragment implements OnClickListener {
     View layout = inflater.inflate(R.layout.fragment_camera, container, false);
 
     photoView = layout.findViewById(R.id.photoView);
-    photoView.setOnLongClickListener(new OnLongClickListener() {
-      @Override
-      public boolean onLongClick(View view) {
-        Matrix matrix = new Matrix();
-        photoView.setScaleType(ImageView.ScaleType.MATRIX);   //required
-        matrix.postRotate((float) ++angle *  90, photoView.getWidth() / 2, photoView.getHeight() / 2);
-        Bitmap original = ((BitmapDrawable) photoView.getDrawable()).getBitmap();
-        Bitmap result = Bitmap.createBitmap(original, 0, 0, original.getWidth(), original.getHeight(), matrix, false);
-        photoView.setImageBitmap(result);
-
-        FileOutputStream fOut = null;
-        try {
-          fOut = new FileOutputStream(new File(lastImage));
-          result.compress(CompressFormat.JPEG, 100, fOut);
-          fOut.flush();
-          fOut.close();
-        } catch (FileNotFoundException e) {
-          e.printStackTrace();
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
-
-        return true;
-      }
-    });
+//    photoView.setOnLongClickListener(new OnLongClickListener() {
+//      @Override
+//      public boolean onLongClick(View view) {
+//        Matrix matrix = new Matrix();
+//        photoView.setScaleType(ImageView.ScaleType.MATRIX);   //required
+//        matrix.postRotate((float) --angle *  90, photoView.getWidth() / 2, photoView.getHeight() / 2);
+//        Bitmap original = ((BitmapDrawable) photoView.getDrawable()).getBitmap();
+//        Bitmap result = Bitmap.createBitmap(original, 0, 0, original.getWidth(), original.getHeight(), matrix, false);
+//        photoView.setImageBitmap(result);
+//
+//        FileOutputStream fOut = null;
+//        try {
+//          fOut = new FileOutputStream(new File(lastImage));
+//          result.compress(CompressFormat.JPEG, 100, fOut);
+//          fOut.flush();
+//          fOut.close();
+//        } catch (FileNotFoundException e) {
+//          e.printStackTrace();
+//        } catch (IOException e) {
+//          e.printStackTrace();
+//        }x
+//
+//        return true;
+//      }
+//    });
     button = layout.findViewById(R.id.captureButton);
     importButton = layout.findViewById(R.id.importButton);
     progressBar = layout.findViewById(R.id.progressBar);
@@ -547,7 +547,7 @@ public class CameraFragment extends Fragment implements OnClickListener {
     // Create an image file name
     String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
     String imageFileName = "JPEG_" + timeStamp + "_";
-    File storageDir = getContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+    File storageDir = getContext().getExternalMediaDirs()[0];
     File image = File.createTempFile(
         imageFileName,  /* prefix */
         ".jpg",         /* suffix */
