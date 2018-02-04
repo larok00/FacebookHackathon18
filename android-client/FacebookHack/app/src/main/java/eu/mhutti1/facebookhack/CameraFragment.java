@@ -32,6 +32,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Looper;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -221,7 +222,9 @@ public class CameraFragment extends Fragment implements OnClickListener {
 
     @Override
     public void onDisconnected(CameraDevice camera) {
-      cameraDevice.close();
+      if (cameraDevice != null) {
+        cameraDevice.close();
+      }
     }
 
     @Override
@@ -256,6 +259,26 @@ public class CameraFragment extends Fragment implements OnClickListener {
     }
   }
 
+  @Override
+  public void onResume() {
+    super.onResume();
+    Log.e(TAG, "onResume");
+    startBackgroundThread();
+    if (textureView.isAvailable()) {
+      startCamera();
+    } else {
+      textureView.setSurfaceTextureListener(textureListener);
+    }
+  }
+
+  @Override
+  public void onPause() {
+    Log.e(TAG, "onPause");
+    //closeCamera();
+    stopBackgroundThread();
+    super.onPause();
+  }
+
   protected void createCameraPreview() {
     try {
       SurfaceTexture texture = textureView.getSurfaceTexture();
@@ -264,6 +287,7 @@ public class CameraFragment extends Fragment implements OnClickListener {
       Surface surface = new Surface(texture);
       captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
       captureRequestBuilder.addTarget(surface);
+
       cameraDevice.createCaptureSession(Arrays.asList(surface), new CameraCaptureSession.StateCallback(){
         @Override
         public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
@@ -300,11 +324,16 @@ public class CameraFragment extends Fragment implements OnClickListener {
       }
       int width = 640;
       int height = 480;
-      if (jpegSizes != null && 0 < jpegSizes.length) {
-        width = jpegSizes[0].getWidth();
-        height = jpegSizes[0].getHeight();
+      int i = 0;
+      while ( i < jpegSizes.length - 1) {
+        if (jpegSizes[i].getWidth() / jpegSizes[i].getHeight() == textureView.getWidth() / textureView.getHeight()) {
+          width = jpegSizes[i].getWidth();
+          height = jpegSizes[i].getHeight();
+          break;
+        }
+        i++;
       }
-      ImageReader reader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 1);
+      ImageReader reader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 3);
       List<Surface> outputSurfaces = new ArrayList<Surface>(2);
       outputSurfaces.add(reader.getSurface());
       outputSurfaces.add(new Surface(textureView.getSurfaceTexture()));
@@ -330,7 +359,7 @@ public class CameraFragment extends Fragment implements OnClickListener {
           } catch (IOException e) {
             e.printStackTrace();
           } finally {
-            if (image != null) {
+              if (image != null) {
               image.close();
             }
           }
@@ -339,22 +368,26 @@ public class CameraFragment extends Fragment implements OnClickListener {
           OutputStream output = null;
           try {
             output = new FileOutputStream(file);
-            if (cameraNumber % 2 == 1) {
               Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
               Matrix matrix = new Matrix();
               matrix.postScale(1, -1, bitmap.getWidth() / 2, bitmap.getHeight() / 2);
               Bitmap.createBitmap(bitmap,0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true).compress(CompressFormat.JPEG, 100, output);
-            } else {
-              output.write(bytes);
-            }
+
+              //output.write(bytes);
+
           } finally {
             if (null != output) {
               output.close();
             }
-            photoView.setImageBitmap(BitmapFactory.decodeFile(file.getPath()));
-            lastImage = file.getPath();
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
+              @Override
+              public void run() {
+                photoView.setImageBitmap(BitmapFactory.decodeFile(file.getPath()));
+                lastImage = file.getPath();
+                process();
+              }
+            });
            // photoView.setImageBitmap(imageBitmap);
-            process();
 
           }
         }
