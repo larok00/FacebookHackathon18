@@ -1,6 +1,7 @@
 package eu.mhutti1.facebookhack;
 
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -80,6 +81,9 @@ public class MainActivity extends AppCompatActivity implements CameraFragment.On
       return false;
     }
   };
+
+  static Configuration configuration;
+
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
