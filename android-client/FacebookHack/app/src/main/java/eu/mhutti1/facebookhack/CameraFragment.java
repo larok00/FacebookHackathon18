@@ -310,111 +310,37 @@ public class CameraFragment extends Fragment implements OnClickListener {
 
 
   protected void capturePicture(String path) {
-    if(null == cameraDevice) {
+    if (null == cameraDevice) {
       Log.e(TAG, "cameraDevice is null");
       return;
     }
-    CameraManager manager = (CameraManager) getActivity().getSystemService(Context.CAMERA_SERVICE);
+    final File file = new File(path);
+    OutputStream output = null;
     try {
-      CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraDevice.getId());
-      Size[] jpegSizes = null;
-      if (characteristics != null) {
-        jpegSizes = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP).getOutputSizes(
-            ImageFormat.JPEG);
-      }
-      int width = 640;
-      int height = 480;
-      int i = 0;
-      while ( i < jpegSizes.length - 1) {
-        if (jpegSizes[i].getWidth() / jpegSizes[i].getHeight() == textureView.getWidth() / textureView.getHeight()) {
-          width = jpegSizes[i].getWidth();
-          height = jpegSizes[i].getHeight();
-          break;
-        }
-        i++;
-      }
-      ImageReader reader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 3);
-      List<Surface> outputSurfaces = new ArrayList<Surface>(2);
-      outputSurfaces.add(reader.getSurface());
-      outputSurfaces.add(new Surface(textureView.getSurfaceTexture()));
-      final CaptureRequest.Builder captureBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
-      captureBuilder.addTarget(reader.getSurface());
-      captureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-      // Orientation
-      int rotation = getActivity().getWindowManager().getDefaultDisplay().getRotation();
-      captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
-      final File file = new File(path);
-      ImageReader.OnImageAvailableListener readerListener = new ImageReader.OnImageAvailableListener() {
-        @Override
-        public void onImageAvailable(ImageReader reader) {
-          Image image = null;
-          try {
-            image = reader.acquireLatestImage();
-            ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-            byte[] bytes = new byte[buffer.capacity()];
-            buffer.get(bytes);
-            save(bytes);
-          } catch (FileNotFoundException e) {
-            e.printStackTrace();
-          } catch (IOException e) {
-            e.printStackTrace();
-          } finally {
-              if (image != null) {
-              image.close();
-            }
-          }
-        }
-        private void save(byte[] bytes) throws IOException {
-          OutputStream output = null;
-          try {
-            output = new FileOutputStream(file);
-              Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-              Matrix matrix = new Matrix();
-              matrix.postScale(1, -1, bitmap.getWidth() / 2, bitmap.getHeight() / 2);
-              Bitmap.createBitmap(bitmap,0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true).compress(CompressFormat.JPEG, 100, output);
+      output = new FileOutputStream(file);
+      Bitmap bitmap = textureView.getBitmap();
+      bitmap.compress(CompressFormat.JPEG, 100, output);
 
-              //output.write(bytes);
+      //output.write(bytes);
 
-          } finally {
-            if (null != output) {
-              output.close();
-            }
-            new Handler(Looper.getMainLooper()).post(new Runnable() {
-              @Override
-              public void run() {
-                photoView.setImageBitmap(BitmapFactory.decodeFile(file.getPath()));
-                lastImage = file.getPath();
-                process();
-              }
-            });
-           // photoView.setImageBitmap(imageBitmap);
-
-          }
-        }
-      };
-      reader.setOnImageAvailableListener(readerListener, handler);
-      final CameraCaptureSession.CaptureCallback captureListener = new CameraCaptureSession.CaptureCallback() {
-        @Override
-        public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result) {
-          super.onCaptureCompleted(session, request, result);
-          createCameraPreview();
-        }
-      };
-      cameraDevice.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
-        @Override
-        public void onConfigured(CameraCaptureSession session) {
-          try {
-            session.capture(captureBuilder.build(), captureListener, handler);
-          } catch (CameraAccessException e) {
-            e.printStackTrace();
-          }
-        }
-        @Override
-        public void onConfigureFailed(CameraCaptureSession session) {
-        }
-      }, handler);
-    } catch (CameraAccessException e) {
+    } catch (FileNotFoundException e) {
       e.printStackTrace();
+    } finally {
+      if (null != output) {
+        try {
+          output.close();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      }
+      new Handler(Looper.getMainLooper()).post(new Runnable() {
+        @Override
+        public void run() {
+          photoView.setImageBitmap(BitmapFactory.decodeFile(file.getPath()));
+          lastImage = file.getPath();
+          process();
+        }
+      });
     }
   }
   private void startCamera() {
