@@ -199,6 +199,11 @@ def smile(img, coeff):
         img = remapImage(img, oldLandmarkPoints, newLandmarkPoints)
     return img
 
+def process_image_aux(img, coeff):
+  img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+  img = smile(img, coeff)
+  return img
+
 #######################################################################
 
 mod = Blueprint('process_image', __name__)
@@ -211,8 +216,16 @@ def process_image():
     photo.save(in_memory_file)
     data = np.fromstring(in_memory_file.getvalue(), dtype=np.uint8)
     color_image_flag = 1
+    coeff = 0.8
+    if 'emotion' in request.headers:
+      if request.headers.get('emotion') == 'sad':
+        coeff = -coeff
+      elif request.headers.get('emotion') == 'vsad':
+        coeff = -2 * coeff
+      elif request.headers.get('emotion') == 'vhappy':
+        coeff = 2 * coeff
     img = cv2.imdecode(data, color_image_flag)
-    img = process_image_aux(img)
+    img = process_image_aux(img, coeff)
     print('processed image')
     img = Image.fromarray(img)
     out_memory_file = BytesIO()
