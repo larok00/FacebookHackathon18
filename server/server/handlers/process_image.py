@@ -170,17 +170,25 @@ def smile(img, coeff):
         print(faceHeight)
 
         # move some points
-        landmarks[36] = (landmarks[36][0], landmarks[36][1] - int(faceHeight / 40 * coeff))
-        landmarks[45] = (landmarks[45][0], landmarks[45][1] - int(faceHeight / 40 * coeff))
+        # eyes
+        #landmarks[36] = (landmarks[36][0], landmarks[36][1] - int(faceHeight / 30 * coeff))
+        #landmarks[45] = (landmarks[45][0], landmarks[45][1] - int(faceHeight / 30 * coeff))
+        
+        #landmarks[19] = (landmarks[19][0], landmarks[19][1] - int(faceHeight / 30 * coeff))
+        #landmarks[24] = (landmarks[24][0], landmarks[24][1] - int(faceHeight / 30 * coeff))
+        
+        temp = 6
+        if coeff < 0:
+            temp = 20
+            
+        landmarks[51] = (landmarks[51][0], landmarks[51][1] - int(faceHeight / 40 * coeff))
+        landmarks[57] = (landmarks[57][0], landmarks[57][1] + int(faceHeight / 60 * coeff))
+        
+        landmarks[48] = (landmarks[48][0] - abs(int(faceWidth / temp * coeff)), landmarks[48][1] - int(faceHeight / 7 * coeff))
+        landmarks[49] = (landmarks[49][0] - abs(int(faceWidth / temp * coeff)), landmarks[49][1] - int(faceHeight / 20 * coeff))
 
-        landmarks[19] = (landmarks[19][0], landmarks[19][1] - int(faceHeight / 30 * coeff))
-        landmarks[24] = (landmarks[24][0], landmarks[24][1] - int(faceHeight / 30 * coeff))
-
-        landmarks[48] = (landmarks[48][0] - abs(int(faceWidth / 7 * coeff)), landmarks[48][1] - int(faceHeight / 10 * coeff))
-        landmarks[49] = (landmarks[49][0] - abs(int(faceWidth / 7 * coeff)), landmarks[49][1] - int(faceHeight / 30 * coeff))
-
-        landmarks[54] = (landmarks[54][0] + abs(int(faceWidth / 7 * coeff)), landmarks[54][1] - int(faceHeight / 10 * coeff))
-        landmarks[53] = (landmarks[53][0] + abs(int(faceWidth / 7 * coeff)), landmarks[53][1] - int(faceHeight / 30 * coeff))
+        landmarks[54] = (landmarks[54][0] + abs(int(faceWidth / temp * coeff)), landmarks[54][1] - int(faceHeight / 7 * coeff))
+        landmarks[53] = (landmarks[53][0] + abs(int(faceWidth / temp * coeff)), landmarks[53][1] - int(faceHeight / 20 * coeff))
 
         for t in landmarkTriangles:
             x,y,z = t
@@ -190,11 +198,6 @@ def smile(img, coeff):
             newLandmarkPoints.append(np.array([p0, p1, p2]))
         img = remapImage(img, oldLandmarkPoints, newLandmarkPoints)
     return img
-
-def process_image_aux(img):
-  img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-  img = smile(img, 0.5)
-  return img
 
 #######################################################################
 
